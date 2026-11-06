@@ -1,0 +1,903 @@
+-- Vanta Batch Utility & Tabbed UI (Diamond Block & Spawners Integrated)
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
+
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui", 10)
+if not PlayerGui then return end
+
+-- Clean up existing instances safely
+if PlayerGui:FindFirstChild("VantaBatchUI") then
+    PlayerGui.VantaBatchUI:Destroy()
+end
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "VantaBatchUI"
+ScreenGui.Parent = PlayerGui
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.ResetOnSpawn = false
+
+-- Main Window Frame
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Parent = ScreenGui
+MainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+MainFrame.BorderColor3 = Color3.fromRGB(50, 50, 50)
+MainFrame.Position = UDim2.new(0.15, 0, 0.15, 0)
+MainFrame.Size = UDim2.new(0, 320, 0, 420)
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.ZIndex = 2
+
+-- Title Bar
+local TitleBar = Instance.new("Frame")
+TitleBar.Parent = MainFrame
+TitleBar.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+TitleBar.BorderSizePixel = 0
+TitleBar.Size = UDim2.new(1, 0, 0, 32)
+TitleBar.ZIndex = 3
+
+local TitleLabel = Instance.new("TextLabel")
+TitleLabel.Parent = TitleBar
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.Position = UDim2.new(0, 12, 0, 0)
+TitleLabel.Size = UDim2.new(1, -12, 1, 0)
+TitleLabel.Font = Enum.Font.Code
+TitleLabel.Text = "Vanta // Batch Utility"
+TitleLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
+TitleLabel.TextSize = 13
+TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+TitleLabel.ZIndex = 4
+
+-- Tab Selection Bar (3 Tabs: Player, Utility, Troll)
+local TabBar = Instance.new("Frame")
+TabBar.Parent = MainFrame
+TabBar.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
+TabBar.BorderSizePixel = 0
+TabBar.Position = UDim2.new(0, 0, 0, 32)
+TabBar.Size = UDim2.new(1, 0, 0, 28)
+TabBar.ZIndex = 3
+
+local PlayerTabBtn = Instance.new("TextButton")
+PlayerTabBtn.Parent = TabBar
+PlayerTabBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+PlayerTabBtn.BorderSizePixel = 0
+PlayerTabBtn.Position = UDim2.new(0, 0, 0, 0)
+PlayerTabBtn.Size = UDim2.new(0.333, 0, 1, 0)
+PlayerTabBtn.Font = Enum.Font.Code
+PlayerTabBtn.Text = "Player"
+PlayerTabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+PlayerTabBtn.TextSize = 11
+PlayerTabBtn.ZIndex = 4
+
+local UtilityTabBtn = Instance.new("TextButton")
+UtilityTabBtn.Parent = TabBar
+UtilityTabBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+UtilityTabBtn.BorderSizePixel = 0
+UtilityTabBtn.Position = UDim2.new(0.333, 0, 0, 0)
+UtilityTabBtn.Size = UDim2.new(0.333, 0, 1, 0)
+UtilityTabBtn.Font = Enum.Font.Code
+UtilityTabBtn.Text = "Utility"
+UtilityTabBtn.TextColor3 = Color3.fromRGB(140, 140, 140)
+UtilityTabBtn.TextSize = 11
+UtilityTabBtn.ZIndex = 4
+
+local TrollTabBtn = Instance.new("TextButton")
+TrollTabBtn.Parent = TabBar
+TrollTabBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+TrollTabBtn.BorderSizePixel = 0
+TrollTabBtn.Position = UDim2.new(0.666, 0, 0, 0)
+TrollTabBtn.Size = UDim2.new(0.334, 0, 1, 0)
+TrollTabBtn.Font = Enum.Font.Code
+TrollTabBtn.Text = "Troll"
+TrollTabBtn.TextColor3 = Color3.fromRGB(140, 140, 140)
+TrollTabBtn.TextSize = 11
+TrollTabBtn.ZIndex = 4
+
+-- Content Containers
+local ContainerHolder = Instance.new("Frame")
+ContainerHolder.Parent = MainFrame
+ContainerHolder.BackgroundTransparency = 1
+ContainerHolder.Position = UDim2.new(0, 0, 0, 60)
+ContainerHolder.Size = UDim2.new(1, 0, 1, -60)
+ContainerHolder.ZIndex = 3
+
+local PlayerContainer = Instance.new("ScrollingFrame")
+PlayerContainer.Name = "PlayerContainer"
+PlayerContainer.Parent = ContainerHolder
+PlayerContainer.BackgroundTransparency = 1
+PlayerContainer.Size = UDim2.new(1, 0, 1, 0)
+PlayerContainer.CanvasSize = UDim2.new(0, 0, 0, 410)
+PlayerContainer.ScrollBarThickness = 4
+PlayerContainer.Visible = true
+PlayerContainer.ZIndex = 3
+
+local UtilityContainer = Instance.new("ScrollingFrame")
+UtilityContainer.Name = "UtilityContainer"
+UtilityContainer.Parent = ContainerHolder
+UtilityContainer.BackgroundTransparency = 1
+UtilityContainer.Size = UDim2.new(1, 0, 1, 0)
+UtilityContainer.CanvasSize = UDim2.new(0, 0, 0, 285)
+UtilityContainer.ScrollBarThickness = 4
+UtilityContainer.Visible = false
+UtilityContainer.ZIndex = 3
+
+local TrollContainer = Instance.new("ScrollingFrame")
+TrollContainer.Name = "TrollContainer"
+TrollContainer.Parent = ContainerHolder
+TrollContainer.BackgroundTransparency = 1
+TrollContainer.Size = UDim2.new(1, 0, 1, 0)
+TrollContainer.CanvasSize = UDim2.new(0, 0, 0, 380)
+TrollContainer.ScrollBarThickness = 4
+TrollContainer.Visible = false
+TrollContainer.ZIndex = 3
+
+-- Tab Switching Logic
+PlayerTabBtn.MouseButton1Click:Connect(function()
+    PlayerContainer.Visible = true
+    UtilityContainer.Visible = false
+    TrollContainer.Visible = false
+    PlayerTabBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    PlayerTabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    UtilityTabBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    UtilityTabBtn.TextColor3 = Color3.fromRGB(140, 140, 140)
+    TrollTabBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    TrollTabBtn.TextColor3 = Color3.fromRGB(140, 140, 140)
+end)
+
+UtilityTabBtn.MouseButton1Click:Connect(function()
+    UtilityContainer.Visible = true
+    PlayerContainer.Visible = false
+    TrollContainer.Visible = false
+    UtilityTabBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    UtilityTabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    PlayerTabBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    PlayerTabBtn.TextColor3 = Color3.fromRGB(140, 140, 140)
+    TrollTabBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    TrollTabBtn.TextColor3 = Color3.fromRGB(140, 140, 140)
+end)
+
+TrollTabBtn.MouseButton1Click:Connect(function()
+    TrollContainer.Visible = true
+    PlayerContainer.Visible = false
+    UtilityContainer.Visible = false
+    TrollTabBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    TrollTabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    PlayerTabBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    PlayerTabBtn.TextColor3 = Color3.fromRGB(140, 140, 140)
+    UtilityTabBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    UtilityTabBtn.TextColor3 = Color3.fromRGB(140, 140, 140)
+end)
+
+-- PLAYER TAB CONTROLS (WalkSpeed, JumpPower, Health Buff, Noclip & Script Loaders)
+local SpeedLabel = Instance.new("TextLabel")
+SpeedLabel.Parent = PlayerContainer
+SpeedLabel.BackgroundTransparency = 1
+SpeedLabel.Position = UDim2.new(0, 15, 0, 20)
+SpeedLabel.Size = UDim2.new(0, 120, 0, 24)
+SpeedLabel.Font = Enum.Font.Code
+SpeedLabel.Text = "WalkSpeed:"
+SpeedLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+SpeedLabel.TextSize = 12
+SpeedLabel.TextXAlignment = Enum.TextXAlignment.Left
+SpeedLabel.ZIndex = 4
+
+local SpeedBox = Instance.new("TextBox")
+SpeedBox.Parent = PlayerContainer
+SpeedBox.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
+SpeedBox.BorderColor3 = Color3.fromRGB(60, 60, 60)
+SpeedBox.Position = UDim2.new(0, 160, 0, 18)
+SpeedBox.Size = UDim2.new(0, 135, 0, 28)
+SpeedBox.Font = Enum.Font.Code
+SpeedBox.Text = "16"
+SpeedBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+SpeedBox.TextSize = 12
+SpeedBox.ZIndex = 4
+
+local JumpLabel = Instance.new("TextLabel")
+JumpLabel.Parent = PlayerContainer
+JumpLabel.BackgroundTransparency = 1
+JumpLabel.Position = UDim2.new(0, 15, 0, 65)
+JumpLabel.Size = UDim2.new(0, 120, 0, 24)
+JumpLabel.Font = Enum.Font.Code
+JumpLabel.Text = "JumpPower:"
+JumpLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+JumpLabel.TextSize = 12
+JumpLabel.TextXAlignment = Enum.TextXAlignment.Left
+JumpLabel.ZIndex = 4
+
+local JumpBox = Instance.new("TextBox")
+JumpBox.Parent = PlayerContainer
+JumpBox.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
+JumpBox.BorderColor3 = Color3.fromRGB(60, 60, 60)
+JumpBox.Position = UDim2.new(0, 160, 0, 63)
+JumpBox.Size = UDim2.new(0, 135, 0, 28)
+JumpBox.Font = Enum.Font.Code
+JumpBox.Text = "50"
+JumpBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+JumpBox.TextSize = 12
+JumpBox.ZIndex = 4
+
+-- Health Buff Controls UI
+local HealthLabel = Instance.new("TextLabel")
+HealthLabel.Parent = PlayerContainer
+HealthLabel.BackgroundTransparency = 1
+HealthLabel.Position = UDim2.new(0, 15, 0, 110)
+HealthLabel.Size = UDim2.new(0, 120, 0, 24)
+HealthLabel.Font = Enum.Font.Code
+HealthLabel.Text = "Target Health:"
+HealthLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+HealthLabel.TextSize = 12
+HealthLabel.TextXAlignment = Enum.TextXAlignment.Left
+HealthLabel.ZIndex = 4
+
+local HealthBox = Instance.new("TextBox")
+HealthBox.Parent = PlayerContainer
+HealthBox.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
+HealthBox.BorderColor3 = Color3.fromRGB(60, 60, 60)
+HealthBox.Position = UDim2.new(0, 160, 0, 108)
+HealthBox.Size = UDim2.new(0, 135, 0, 28)
+HealthBox.Font = Enum.Font.Code
+HealthBox.Text = "500"
+HealthBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+HealthBox.TextSize = 12
+HealthBox.ZIndex = 4
+
+local HealthToggleBtn = Instance.new("TextButton")
+HealthToggleBtn.Parent = PlayerContainer
+HealthToggleBtn.BackgroundColor3 = Color3.fromRGB(45, 25, 25)
+HealthToggleBtn.BorderColor3 = Color3.fromRGB(100, 50, 50)
+HealthToggleBtn.Position = UDim2.new(0, 15, 0, 152)
+HealthToggleBtn.Size = UDim2.new(0, 280, 0, 32)
+HealthToggleBtn.Font = Enum.Font.Code
+HealthToggleBtn.Text = "Health Buff: OFF"
+HealthToggleBtn.TextColor3 = Color3.fromRGB(255, 150, 150)
+HealthToggleBtn.TextSize = 12
+HealthToggleBtn.ZIndex = 4
+
+local healthBuffActive = false
+
+HealthToggleBtn.MouseButton1Click:Connect(function()
+    healthBuffActive = not healthBuffActive
+    if healthBuffActive then
+        HealthToggleBtn.Text = "Health Buff: ON"
+        HealthToggleBtn.TextColor3 = Color3.fromRGB(150, 255, 150)
+        HealthToggleBtn.BackgroundColor3 = Color3.fromRGB(25, 45, 25)
+    else
+        HealthToggleBtn.Text = "Health Buff: OFF"
+        HealthToggleBtn.TextColor3 = Color3.fromRGB(255, 150, 150)
+        HealthToggleBtn.BackgroundColor3 = Color3.fromRGB(45, 25, 25)
+    end
+end)
+
+-- Noclip Toggle Button UI
+local NoclipToggleBtn = Instance.new("TextButton")
+NoclipToggleBtn.Parent = PlayerContainer
+NoclipToggleBtn.BackgroundColor3 = Color3.fromRGB(25, 45, 35)
+NoclipToggleBtn.BorderColor3 = Color3.fromRGB(50, 100, 70)
+NoclipToggleBtn.Position = UDim2.new(0, 15, 0, 196)
+NoclipToggleBtn.Size = UDim2.new(0, 280, 0, 34)
+NoclipToggleBtn.Font = Enum.Font.Code
+NoclipToggleBtn.Text = "Noclip: OFF"
+NoclipToggleBtn.TextColor3 = Color3.fromRGB(150, 255, 150)
+NoclipToggleBtn.TextSize = 12
+NoclipToggleBtn.ZIndex = 4
+
+local noclipActive = false
+
+NoclipToggleBtn.MouseButton1Click:Connect(function()
+    noclipActive = not noclipActive
+    if noclipActive then
+        NoclipToggleBtn.Text = "Noclip: ON"
+        NoclipToggleBtn.TextColor3 = Color3.fromRGB(100, 255, 100)
+        NoclipToggleBtn.BackgroundColor3 = Color3.fromRGB(35, 75, 45)
+    else
+        NoclipToggleBtn.Text = "Noclip: OFF"
+        NoclipToggleBtn.TextColor3 = Color3.fromRGB(150, 255, 150)
+        NoclipToggleBtn.BackgroundColor3 = Color3.fromRGB(25, 45, 35)
+    end
+end)
+
+-- Fly GUI Script Loader Button
+local LoadFlyGuiBtn = Instance.new("TextButton")
+LoadFlyGuiBtn.Parent = PlayerContainer
+LoadFlyGuiBtn.BackgroundColor3 = Color3.fromRGB(25, 45, 35)
+LoadFlyGuiBtn.BorderColor3 = Color3.fromRGB(50, 100, 70)
+LoadFlyGuiBtn.Position = UDim2.new(0, 15, 0, 243)
+LoadFlyGuiBtn.Size = UDim2.new(0, 280, 0, 34)
+LoadFlyGuiBtn.Font = Enum.Font.Code
+LoadFlyGuiBtn.Text = "Load Fly GUI Script"
+LoadFlyGuiBtn.TextColor3 = Color3.fromRGB(150, 255, 150)
+LoadFlyGuiBtn.TextSize = 12
+LoadFlyGuiBtn.ZIndex = 4
+
+LoadFlyGuiBtn.MouseButton1Click:Connect(function()
+    pcall(function()
+        loadstring(game:HttpGet("https://luau.pro/storage/FLY-GUI.lua"))()
+    end)
+end)
+
+-- Infinite Yield Script Loader Button
+local LoadIYBtn = Instance.new("TextButton")
+LoadIYBtn.Parent = PlayerContainer
+LoadIYBtn.BackgroundColor3 = Color3.fromRGB(25, 35, 45)
+LoadIYBtn.BorderColor3 = Color3.fromRGB(50, 70, 100)
+LoadIYBtn.Position = UDim2.new(0, 15, 0, 290)
+LoadIYBtn.Size = UDim2.new(0, 280, 0, 34)
+LoadIYBtn.Font = Enum.Font.Code
+LoadIYBtn.Text = "Load Infinite Yield"
+LoadIYBtn.TextColor3 = Color3.fromRGB(150, 200, 255)
+LoadIYBtn.TextSize = 12
+LoadIYBtn.ZIndex = 4
+
+LoadIYBtn.MouseButton1Click:Connect(function()
+    pcall(function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
+    end)
+end)
+
+-- UTILITY TAB CONTROLS (Slider & Batch Spawners)
+local SliderVal = 1
+
+local SliderTitle = Instance.new("TextLabel")
+SliderTitle.Parent = UtilityContainer
+SliderTitle.BackgroundTransparency = 1
+SliderTitle.Position = UDim2.new(0, 15, 0, 15)
+SliderTitle.Size = UDim2.new(0, 280, 0, 20)
+SliderTitle.Font = Enum.Font.Code
+SliderTitle.Text = "Batch Count: 1 / 1000"
+SliderTitle.TextColor3 = Color3.fromRGB(200, 200, 200)
+SliderTitle.TextSize = 12
+SliderTitle.TextXAlignment = Enum.TextXAlignment.Left
+SliderTitle.ZIndex = 4
+
+local SliderTrack = Instance.new("TextButton")
+SliderTrack.Name = "SliderTrack"
+SliderTrack.Parent = UtilityContainer
+SliderTrack.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+SliderTrack.BorderSizePixel = 0
+SliderTrack.Position = UDim2.new(0, 15, 0, 42)
+SliderTrack.Size = UDim2.new(0, 280, 0, 12)
+SliderTrack.AutoButtonColor = false
+SliderTrack.Text = ""
+SliderTrack.ZIndex = 4
+
+local SliderFill = Instance.new("Frame")
+SliderFill.Parent = SliderTrack
+SliderFill.BackgroundColor3 = Color3.fromRGB(160, 100, 220)
+SliderFill.BorderSizePixel = 0
+SliderFill.Size = UDim2.new(0.001, 0, 1, 0)
+SliderFill.ZIndex = 5
+
+local SliderButton = Instance.new("Frame")
+SliderButton.Parent = SliderTrack
+SliderButton.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
+SliderButton.BorderSizePixel = 0
+SliderButton.Position = UDim2.new(0, -6, -0.5, 0)
+SliderButton.Size = UDim2.new(0, 12, 0, 20)
+SliderButton.ZIndex = 6
+
+local sliding = false
+
+local function updateSlider(input)
+    local trackPos = SliderTrack.AbsolutePosition.X
+    local trackSize = SliderTrack.AbsoluteSize.X
+    local relativeX = math.clamp((input.Position.X - trackPos) / trackSize, 0, 1)
+    
+    SliderFill.Size = UDim2.new(relativeX, 0, 1, 0)
+    SliderButton.Position = UDim2.new(relativeX, -6, -0.5, 0)
+    
+    SliderVal = math.floor(relativeX * 999) + 1
+    SliderTitle.Text = "Batch Count: " .. tostring(SliderVal) .. " / 1000"
+end
+
+SliderTrack.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        sliding = true
+        updateSlider(input)
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        sliding = false
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if sliding and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        updateSlider(input)
+    end
+end)
+
+-- Lucky Block Spawner Button
+local BatchSpawnLucky = Instance.new("TextButton")
+BatchSpawnLucky.Parent = UtilityContainer
+BatchSpawnLucky.BackgroundColor3 = Color3.fromRGB(35, 25, 45)
+BatchSpawnLucky.BorderColor3 = Color3.fromRGB(80, 50, 100)
+BatchSpawnLucky.Position = UDim2.new(0, 15, 0, 75)
+BatchSpawnLucky.Size = UDim2.new(0, 280, 0, 32)
+BatchSpawnLucky.Font = Enum.Font.Code
+BatchSpawnLucky.Text = "Spawn Lucky Blocks"
+BatchSpawnLucky.TextColor3 = Color3.fromRGB(220, 180, 255)
+BatchSpawnLucky.TextSize = 12
+BatchSpawnLucky.ZIndex = 4
+
+BatchSpawnLucky.MouseButton1Click:Connect(function()
+    pcall(function()
+        local remote = ReplicatedStorage:WaitForChild("SpawnLuckyBlock", 2)
+        if remote then
+            for i = 1, SliderVal do
+                remote:FireServer()
+            end
+        end
+    end)
+end)
+
+-- Rainbow Block Spawner Button
+local BatchSpawnRainbow = Instance.new("TextButton")
+BatchSpawnRainbow.Parent = UtilityContainer
+BatchSpawnRainbow.BackgroundColor3 = Color3.fromRGB(45, 35, 25)
+BatchSpawnRainbow.BorderColor3 = Color3.fromRGB(100, 80, 50)
+BatchSpawnRainbow.Position = UDim2.new(0, 15, 0, 115)
+BatchSpawnRainbow.Size = UDim2.new(0, 280, 0, 32)
+BatchSpawnRainbow.Font = Enum.Font.Code
+BatchSpawnRainbow.Text = "Spawn Rainbow Blocks"
+BatchSpawnRainbow.TextColor3 = Color3.fromRGB(255, 220, 180)
+BatchSpawnRainbow.TextSize = 12
+BatchSpawnRainbow.ZIndex = 4
+
+BatchSpawnRainbow.MouseButton1Click:Connect(function()
+    pcall(function()
+        local remote = ReplicatedStorage:WaitForChild("SpawnRainbowBlock", 2)
+        if remote then
+            for i = 1, SliderVal do
+                remote:FireServer()
+            end
+        end
+    end)
+end)
+
+-- Galaxy Block Spawner Button
+local BatchSpawnGalaxy = Instance.new("TextButton")
+BatchSpawnGalaxy.Parent = UtilityContainer
+BatchSpawnGalaxy.BackgroundColor3 = Color3.fromRGB(25, 35, 45)
+BatchSpawnGalaxy.BorderColor3 = Color3.fromRGB(50, 80, 100)
+BatchSpawnGalaxy.Position = UDim2.new(0, 15, 0, 155)
+BatchSpawnGalaxy.Size = UDim2.new(0, 280, 0, 32)
+BatchSpawnGalaxy.Font = Enum.Font.Code
+BatchSpawnGalaxy.Text = "Spawn Galaxy Blocks"
+BatchSpawnGalaxy.TextColor3 = Color3.fromRGB(180, 220, 255)
+BatchSpawnGalaxy.TextSize = 12
+BatchSpawnGalaxy.ZIndex = 4
+
+BatchSpawnGalaxy.MouseButton1Click:Connect(function()
+    pcall(function()
+        local remote = ReplicatedStorage:WaitForChild("SpawnGalaxyBlock", 2)
+        if remote then
+            for i = 1, SliderVal do
+                remote:FireServer()
+            end
+        end
+    end)
+end)
+
+-- Super Block Spawner Button
+local BatchSpawnSuper = Instance.new("TextButton")
+BatchSpawnSuper.Parent = UtilityContainer
+BatchSpawnSuper.BackgroundColor3 = Color3.fromRGB(45, 25, 35)
+BatchSpawnSuper.BorderColor3 = Color3.fromRGB(100, 50, 80)
+BatchSpawnSuper.Position = UDim2.new(0, 15, 0, 195)
+BatchSpawnSuper.Size = UDim2.new(0, 280, 0, 32)
+BatchSpawnSuper.Font = Enum.Font.Code
+BatchSpawnSuper.Text = "Spawn Super Blocks"
+BatchSpawnSuper.TextColor3 = Color3.fromRGB(255, 180, 220)
+BatchSpawnSuper.TextSize = 12
+BatchSpawnSuper.ZIndex = 4
+
+BatchSpawnSuper.MouseButton1Click:Connect(function()
+    pcall(function()
+        local remote = ReplicatedStorage:WaitForChild("SpawnSuperBlock", 2)
+        if remote then
+            for i = 1, SliderVal do
+                remote:FireServer()
+            end
+        end
+    end)
+end)
+
+-- Diamond Block Spawner Button
+local BatchSpawnDiamond = Instance.new("TextButton")
+BatchSpawnDiamond.Parent = UtilityContainer
+BatchSpawnDiamond.BackgroundColor3 = Color3.fromRGB(25, 45, 45)
+BatchSpawnDiamond.BorderColor3 = Color3.fromRGB(50, 100, 100)
+BatchSpawnDiamond.Position = UDim2.new(0, 15, 0, 235)
+BatchSpawnDiamond.Size = UDim2.new(0, 280, 0, 32)
+BatchSpawnDiamond.Font = Enum.Font.Code
+BatchSpawnDiamond.Text = "Spawn Diamond Blocks"
+BatchSpawnDiamond.TextColor3 = Color3.fromRGB(150, 255, 255)
+BatchSpawnDiamond.TextSize = 12
+BatchSpawnDiamond.ZIndex = 4
+
+BatchSpawnDiamond.MouseButton1Click:Connect(function()
+    pcall(function()
+        local remote = ReplicatedStorage:WaitForChild("SpawnDiamondBlock", 2)
+        if remote then
+            for i = 1, SliderVal do
+                remote:FireServer()
+            end
+        end
+    end)
+end)
+
+-- TROLL TAB CONTROLS (Hitbox Expander, Target Fling & Handle Kill)
+local HitboxEnabled = false
+local HitboxSizeVal = 2
+
+local HitboxToggleBtn = Instance.new("TextButton")
+HitboxToggleBtn.Parent = TrollContainer
+HitboxToggleBtn.BackgroundColor3 = Color3.fromRGB(45, 25, 25)
+HitboxToggleBtn.BorderColor3 = Color3.fromRGB(100, 50, 50)
+HitboxToggleBtn.Position = UDim2.new(0, 15, 0, 15)
+HitboxToggleBtn.Size = UDim2.new(0, 280, 0, 32)
+HitboxToggleBtn.Font = Enum.Font.Code
+HitboxToggleBtn.Text = "Hitbox Expander: OFF"
+HitboxToggleBtn.TextColor3 = Color3.fromRGB(255, 120, 120)
+HitboxToggleBtn.TextSize = 12
+HitboxToggleBtn.ZIndex = 4
+
+HitboxToggleBtn.MouseButton1Click:Connect(function()
+    HitboxEnabled = not HitboxEnabled
+    if HitboxEnabled then
+        HitboxToggleBtn.Text = "Hitbox Expander: ON"
+        HitboxToggleBtn.TextColor3 = Color3.fromRGB(120, 255, 120)
+        HitboxToggleBtn.BackgroundColor3 = Color3.fromRGB(25, 45, 25)
+    else
+        HitboxToggleBtn.Text = "Hitbox Expander: OFF"
+        HitboxToggleBtn.TextColor3 = Color3.fromRGB(255, 120, 120)
+        HitboxToggleBtn.BackgroundColor3 = Color3.fromRGB(45, 25, 25)
+    end
+end)
+
+local HitboxSliderTitle = Instance.new("TextLabel")
+HitboxSliderTitle.Parent = TrollContainer
+HitboxSliderTitle.BackgroundTransparency = 1
+HitboxSliderTitle.Position = UDim2.new(0, 15, 0, 60)
+HitboxSliderTitle.Size = UDim2.new(0, 280, 0, 20)
+HitboxSliderTitle.Font = Enum.Font.Code
+HitboxSliderTitle.Text = "Hitbox Size: 2 / 50 Studs"
+HitboxSliderTitle.TextColor3 = Color3.fromRGB(200, 200, 200)
+HitboxSliderTitle.TextSize = 12
+HitboxSliderTitle.TextXAlignment = Enum.TextXAlignment.Left
+HitboxSliderTitle.ZIndex = 4
+
+local HBTrack = Instance.new("TextButton")
+HBTrack.Name = "HBTrack"
+HBTrack.Parent = TrollContainer
+HBTrack.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+HBTrack.BorderSizePixel = 0
+HBTrack.Position = UDim2.new(0, 15, 0, 87)
+HBTrack.Size = UDim2.new(0, 280, 0, 12)
+HBTrack.AutoButtonColor = false
+HBTrack.Text = ""
+HBTrack.ZIndex = 4
+
+local HBFill = Instance.new("Frame")
+HBFill.Parent = HBTrack
+HBFill.BackgroundColor3 = Color3.fromRGB(220, 100, 100)
+HBFill.BorderSizePixel = 0
+HBFill.Size = UDim2.new(0.001, 0, 1, 0)
+HBFill.ZIndex = 5
+
+local HBButton = Instance.new("Frame")
+HBButton.Parent = HBTrack
+HBButton.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
+HBButton.BorderSizePixel = 0
+HBButton.Position = UDim2.new(0, -6, -0.5, 0)
+HBButton.Size = UDim2.new(0, 12, 0, 20)
+HBButton.ZIndex = 6
+
+local hbSliding = false
+
+local function updateHBSlider(input)
+    local trackPos = HBTrack.AbsolutePosition.X
+    local trackSize = HBTrack.AbsoluteSize.X
+    local relativeX = math.clamp((input.Position.X - trackPos) / trackSize, 0, 1)
+    
+    HBFill.Size = UDim2.new(relativeX, 0, 1, 0)
+    HBButton.Position = UDim2.new(relativeX, -6, -0.5, 0)
+    
+    HitboxSizeVal = math.floor(relativeX * 49) + 1
+    HitboxSliderTitle.Text = "Hitbox Size: " .. tostring(HitboxSizeVal) .. " / 50 Studs"
+end
+
+HBTrack.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        hbSliding = true
+        updateHBSlider(input)
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        hbSliding = false
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if hbSliding and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        updateHBSlider(input)
+    end
+end)
+
+-- Target Fling UI Controls
+local FlingBox = Instance.new("TextBox")
+FlingBox.Parent = TrollContainer
+FlingBox.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
+FlingBox.BorderColor3 = Color3.fromRGB(60, 60, 60)
+FlingBox.Position = UDim2.new(0, 15, 0, 120)
+FlingBox.Size = UDim2.new(0, 280, 0, 32)
+FlingBox.Font = Enum.Font.Code
+FlingBox.PlaceholderText = "Enter Target Name..."
+FlingBox.Text = ""
+FlingBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+FlingBox.TextSize = 12
+FlingBox.ZIndex = 4
+
+local FlingToggleBtn = Instance.new("TextButton")
+FlingToggleBtn.Parent = TrollContainer
+FlingToggleBtn.BackgroundColor3 = Color3.fromRGB(45, 25, 45)
+FlingToggleBtn.BorderColor3 = Color3.fromRGB(100, 50, 100)
+FlingToggleBtn.Position = UDim2.new(0, 15, 0, 162)
+FlingToggleBtn.Size = UDim2.new(0, 280, 0, 34)
+FlingToggleBtn.Font = Enum.Font.Code
+FlingToggleBtn.Text = "Target Fling: OFF"
+FlingToggleBtn.TextColor3 = Color3.fromRGB(220, 150, 255)
+FlingToggleBtn.TextSize = 12
+FlingToggleBtn.ZIndex = 4
+
+local targetFlingActive = false
+
+FlingToggleBtn.MouseButton1Click:Connect(function()
+    targetFlingActive = not targetFlingActive
+    if targetFlingActive then
+        FlingToggleBtn.Text = "Target Fling: ON"
+        FlingToggleBtn.TextColor3 = Color3.fromRGB(150, 255, 150)
+        FlingToggleBtn.BackgroundColor3 = Color3.fromRGB(25, 55, 25)
+    else
+        FlingToggleBtn.Text = "Target Fling: OFF"
+        FlingToggleBtn.TextColor3 = Color3.fromRGB(220, 150, 255)
+        FlingToggleBtn.BackgroundColor3 = Color3.fromRGB(45, 25, 45)
+    end
+end)
+
+-- Handle Kill UI Controls
+local KillBox = Instance.new("TextBox")
+KillBox.Parent = TrollContainer
+KillBox.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
+KillBox.BorderColor3 = Color3.fromRGB(60, 60, 60)
+KillBox.Position = UDim2.new(0, 15, 0, 210)
+KillBox.Size = UDim2.new(0, 280, 0, 32)
+KillBox.Font = Enum.Font.Code
+KillBox.PlaceholderText = "Enter Handle Kill Target Name..."
+KillBox.Text = ""
+KillBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+KillBox.TextSize = 12
+KillBox.ZIndex = 4
+
+local KillToggleBtn = Instance.new("TextButton")
+KillToggleBtn.Parent = TrollContainer
+KillToggleBtn.BackgroundColor3 = Color3.fromRGB(55, 35, 25)
+KillToggleBtn.BorderColor3 = Color3.fromRGB(120, 70, 50)
+KillToggleBtn.Position = UDim2.new(0, 15, 0, 252)
+KillToggleBtn.Size = UDim2.new(0, 280, 0, 34)
+KillToggleBtn.Font = Enum.Font.Code
+KillToggleBtn.Text = "Handle Kill: OFF"
+KillToggleBtn.TextColor3 = Color3.fromRGB(255, 200, 150)
+KillToggleBtn.TextSize = 12
+KillToggleBtn.ZIndex = 4
+
+local handleKillActive = false
+
+KillToggleBtn.MouseButton1Click:Connect(function()
+    handleKillActive = not handleKillActive
+    if handleKillActive then
+        KillToggleBtn.Text = "Handle Kill: ON"
+        KillToggleBtn.TextColor3 = Color3.fromRGB(150, 255, 150)
+        KillToggleBtn.BackgroundColor3 = Color3.fromRGB(35, 55, 25)
+    else
+        KillToggleBtn.Text = "Handle Kill: OFF"
+        KillToggleBtn.TextColor3 = Color3.fromRGB(255, 200, 150)
+        KillToggleBtn.BackgroundColor3 = Color3.fromRGB(55, 35, 25)
+    end
+end)
+
+-- TOGGLE BUTTON (Movable & Guaranteed Top-Level Rendering)
+local ToggleButton = Instance.new("TextButton")
+ToggleButton.Name = "ToggleButton"
+ToggleButton.Parent = ScreenGui
+ToggleButton.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+ToggleButton.BorderColor3 = Color3.fromRGB(80, 80, 80)
+ToggleButton.Position = UDim2.new(0.05, 0, 0.05, 0)
+ToggleButton.Size = UDim2.new(0, 95, 0, 32)
+ToggleButton.Font = Enum.Font.Code
+ToggleButton.Text = "UI: ON"
+ToggleButton.TextColor3 = Color3.fromRGB(100, 220, 100)
+ToggleButton.TextSize = 12
+ToggleButton.Active = true
+ToggleButton.Draggable = true
+ToggleButton.ZIndex = 10
+
+local isOpen = true
+local dragging = false
+local dragInput, dragStart, startPos
+
+ToggleButton.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = ToggleButton.Position
+        
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+ToggleButton.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        local delta = input.Position - dragStart
+        ToggleButton.Position = UDim2.new(
+            startPos.X.Scale, 
+            startPos.X.Offset + delta.X, 
+            startPos.Y.Scale, 
+            startPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+local clicked = false
+ToggleButton.MouseButton1Down:Connect(function()
+    clicked = true
+end)
+
+ToggleButton.MouseButton1Up:Connect(function()
+    if clicked then
+        isOpen = not isOpen
+        MainFrame.Visible = isOpen
+        if isOpen then
+            ToggleButton.Text = "UI: ON"
+            ToggleButton.TextColor3 = Color3.fromRGB(100, 220, 100)
+        else
+            ToggleButton.Text = "UI: OFF"
+            ToggleButton.TextColor3 = Color3.fromRGB(220, 100, 100)
+        end
+    end
+    clicked = false
+end)
+
+-- Enforcement Loop for Player Modifiers, Health Buff, Noclip, Hitbox Expander, Target Fling, and Handle Kill
+RunService.Heartbeat:Connect(function()
+    local character = LocalPlayer.Character
+    if character then
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        
+        if humanoid then
+            local targetSpeed = tonumber(SpeedBox.Text)
+            local targetJump = tonumber(JumpBox.Text)
+            local targetHealth = tonumber(HealthBox.Text)
+            
+            if targetSpeed then
+                pcall(function()
+                    humanoid.WalkSpeed = targetSpeed
+                end)
+            end
+            
+            if targetJump then
+                humanoid.UseJumpPower = true
+                humanoid.JumpPower = targetJump
+                if pcall(function() return humanoid.JumpHeight end) then
+                    humanoid.JumpHeight = targetJump * 0.4
+                end
+            end
+
+            -- Health Buff Loop
+            if healthBuffActive and targetHealth then
+                pcall(function()
+                    humanoid.MaxHealth = targetHealth
+                    humanoid.Health = targetHealth
+                end)
+            end
+        end
+
+        -- Noclip Loop
+        if noclipActive then
+            pcall(function()
+                for _, part in ipairs(character:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = false
+                    end
+                end
+            end)
+        end
+    end
+
+    -- Hitbox Expander Loop
+    if HitboxEnabled then
+        pcall(function()
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character then
+                    local rootPart = player.Character:FindFirstChild("HumanoidRootPart")
+                    if rootPart then
+                        rootPart.Size = Vector3.new(HitboxSizeVal, HitboxSizeVal, HitboxSizeVal)
+                        rootPart.Transparency = 0.5
+                        rootPart.CanCollide = false
+                    end
+                end
+            end
+        end)
+    end
+
+    -- Target Fling Loop
+    if targetFlingActive then
+        pcall(function()
+            local searchName = string.lower(FlingBox.Text)
+            if searchName ~= "" then
+                for _, player in ipairs(Players:GetPlayers()) do
+                    if player ~= LocalPlayer and (string.find(string.lower(player.Name), searchName) or string.find(string.lower(player.DisplayName), searchName)) then
+                        local targetChar = player.Character
+                        local myChar = LocalPlayer.Character
+                        if targetChar and myChar then
+                            local targetRoot = targetChar:FindFirstChild("HumanoidRootPart")
+                            local myRoot = myChar:FindFirstChild("HumanoidRootPart")
+                            if targetRoot and myRoot then
+                                myRoot.CFrame = targetRoot.CFrame
+                                myRoot.AssemblyLinearVelocity = Vector3.new(30000, 30000, 30000)
+                                myRoot.AssemblyAngularVelocity = Vector3.new(99999, 99999, 99999)
+                            end
+                        end
+                    end
+                end
+            end
+        end)
+    end
+
+    -- Handle Kill Loop
+    if handleKillActive then
+        pcall(function()
+            local searchName = string.lower(KillBox.Text)
+            if searchName ~= "" then
+                for _, player in ipairs(Players:GetPlayers()) do
+                    if player ~= LocalPlayer and (string.find(string.lower(player.Name), searchName) or string.find(string.lower(player.DisplayName), searchName)) then
+                        local targetChar = player.Character
+                        local myChar = LocalPlayer.Character
+                        if targetChar and myChar then
+                            local targetPart = targetChar:FindFirstChild("HumanoidRootPart") or targetChar:FindFirstChild("Torso") or targetChar:FindFirstChild("UpperTorso")
+                            if targetPart then
+                                local tool = myChar:FindFirstChildOfClass("Tool")
+                                if tool then
+                                    local handle = tool:FindFirstChild("Handle")
+                                    if handle and handle:IsA("BasePart") then
+                                        handle.CFrame = targetPart.CFrame
+                                        handle.AssemblyLinearVelocity = Vector3.new(10000, 10000, 10000)
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end)
+    end
+end)
